@@ -472,12 +472,6 @@ Here's a suggested flow for demonstrating the application:
 - Verify API responses in Network tab
 - Ensure backend endpoints are working (test with curl/Postman)
 
-## 📝 Additional Documentation
-
-- `ARCHITECTURE_PROPOSAL.md` - Detailed architecture and design decisions
-- `TESTING_GUIDE.md` - Guide for testing the application
-- `EMAIL_WEBHOOK_FLOW_EXPLANATION.md` - Detailed email flow explanation
-- `TEST_WEBHOOK.md` - Instructions for testing the email webhook
 
 ## 🎯 Key Features
 
