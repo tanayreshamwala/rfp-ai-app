@@ -43,3 +43,6 @@ coverage/
 tmp/
 temp/
 
+# Documentation files (optional - add if you don't want to commit)
+ARCHITECTURE_PROPOSAL.md
+
