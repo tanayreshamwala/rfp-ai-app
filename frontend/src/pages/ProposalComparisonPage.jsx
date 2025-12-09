@@ -8,6 +8,26 @@ import {
   getProposalsForRfp,
 } from "../services/rfpApi";
 
+// Hook to detect screen size
+const useBreakpoint = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(
+    window.innerWidth >= 768 && window.innerWidth < 1024
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return { isMobile, isTablet };
+};
+
 const ProposalComparisonPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -16,6 +36,7 @@ const ProposalComparisonPage = () => {
   const [comparison, setComparison] = useState(null);
   const [loading, setLoading] = useState(true);
   const [comparing, setComparing] = useState(false);
+  const { isMobile, isTablet } = useBreakpoint();
 
   useEffect(() => {
     fetchData();
@@ -75,6 +96,8 @@ const ProposalComparisonPage = () => {
       dataIndex: "vendorId",
       key: "vendor",
       render: (vendor) => vendor?.name || "Unknown",
+      width: isMobile ? 150 : undefined,
+      ellipsis: true,
     },
     {
       title: "Total Price",
@@ -85,6 +108,7 @@ const ProposalComparisonPage = () => {
           parsed?.totalPrice?.toLocaleString() || "N/A"
         }`;
       },
+      width: isMobile ? 130 : undefined,
     },
     {
       title: "Delivery",
@@ -93,18 +117,23 @@ const ProposalComparisonPage = () => {
         const days = record.parsed?.deliveryDays;
         return days ? `${days} days` : "N/A";
       },
+      width: isMobile ? 100 : undefined,
     },
     {
       title: "Payment Terms",
       dataIndex: ["parsed", "paymentTerms"],
       key: "paymentTerms",
       render: (terms) => terms || "N/A",
+      width: isMobile ? 130 : undefined,
+      ellipsis: true,
     },
     {
       title: "Warranty",
       dataIndex: ["parsed", "warranty"],
       key: "warranty",
       render: (warranty) => warranty || "N/A",
+      width: isMobile ? 110 : undefined,
+      ellipsis: true,
     },
     {
       title: "AI Score",
@@ -122,6 +151,7 @@ const ProposalComparisonPage = () => {
         return "-";
       },
       sorter: (a, b) => (b.aiScore || 0) - (a.aiScore || 0),
+      width: isMobile ? 100 : undefined,
     },
   ];
 
@@ -131,40 +161,67 @@ const ProposalComparisonPage = () => {
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(`/rfps/${id}`)}
+          size={isMobile ? "middle" : "default"}
         >
-          Back to RFP
+          {isMobile ? "Back" : "Back to RFP"}
         </Button>
       </div>
 
-      <h1>Compare Proposals: {rfp?.title}</h1>
+      <h1 style={{ fontSize: isMobile ? "20px" : "24px", marginBottom: 16 }}>
+        Compare Proposals: {rfp?.title}
+      </h1>
 
       {proposals.length < 2 ? (
         <Alert
           message="Insufficient Proposals"
-          description="You need at least 2 proposals to compare. Currently you have {proposals.length} proposal(s)."
+          description={`You need at least 2 proposals to compare. Currently you have ${proposals.length} proposal(s).`}
           type="warning"
           style={{ marginBottom: 16 }}
         />
       ) : (
         <div style={{ marginBottom: 16 }}>
-          <Button type="primary" onClick={handleCompare} loading={comparing}>
+          <Button
+            type="primary"
+            onClick={handleCompare}
+            loading={comparing}
+            size={isMobile ? "middle" : "default"}
+            block={isMobile}
+          >
             {comparison ? "Refresh Comparison" : "Compare with AI"}
           </Button>
         </div>
       )}
 
-      <Card title="Proposals Comparison" style={{ marginBottom: 16 }}>
-        <Table
-          columns={comparisonColumns}
-          dataSource={proposals}
-          rowKey="_id"
-          pagination={false}
-        />
+      <Card
+        title="Proposals Comparison"
+        style={{ marginBottom: 16 }}
+        styles={{ body: { padding: isMobile ? 12 : 24 } }}
+      >
+        <div
+          style={{
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+            width: "100%",
+          }}
+        >
+          <Table
+            columns={comparisonColumns}
+            dataSource={proposals}
+            rowKey="_id"
+            pagination={false}
+            scroll={{ x: isMobile ? "max-content" : undefined }}
+            size={isMobile ? "small" : "default"}
+          />
+        </div>
       </Card>
 
       {comparison && (
         <>
-          <Card title="AI Evaluation" style={{ marginBottom: 16 }}>
+          <Card
+            title="AI Evaluation"
+            style={{ marginBottom: 16 }}
+            styles={{ body: { padding: isMobile ? 12 : 24 } }}
+          >
             {comparison.evaluations?.map((eval_, index) => {
               // Backend already matches evaluations correctly by vendorIndex
               // Use vendorName from evaluation which is already correctly set
@@ -174,6 +231,7 @@ const ProposalComparisonPage = () => {
                   type="inner"
                   title={eval_.vendorName || `Vendor ${eval_.vendorIndex + 1}`}
                   style={{ marginBottom: 16 }}
+                  styles={{ body: { padding: isMobile ? 12 : 24 } }}
                 >
                   <div style={{ marginBottom: 8 }}>
                     <strong>Score: </strong>
@@ -189,23 +247,27 @@ const ProposalComparisonPage = () => {
                       {eval_.score}/100
                     </Tag>
                   </div>
-                  <div style={{ marginBottom: 8 }}>
+                  <div style={{ marginBottom: 8, wordWrap: "break-word" }}>
                     <strong>Summary: </strong>
                     {eval_.summary}
                   </div>
                   <div style={{ marginBottom: 8 }}>
                     <strong>Pros: </strong>
-                    <ul>
+                    <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
                       {eval_.pros?.map((pro, i) => (
-                        <li key={i}>{pro}</li>
+                        <li key={i} style={{ wordWrap: "break-word" }}>
+                          {pro}
+                        </li>
                       ))}
                     </ul>
                   </div>
                   <div>
                     <strong>Cons: </strong>
-                    <ul>
+                    <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
                       {eval_.cons?.map((con, i) => (
-                        <li key={i}>{con}</li>
+                        <li key={i} style={{ wordWrap: "break-word" }}>
+                          {con}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -220,6 +282,7 @@ const ProposalComparisonPage = () => {
               border: "2px solid #1890ff",
               backgroundColor: "#e6f7ff",
             }}
+            styles={{ body: { padding: isMobile ? 12 : 24 } }}
           >
             <Alert
               message={`Recommended: ${
@@ -242,10 +305,10 @@ const ProposalComparisonPage = () => {
                 if (recommendedEval) {
                   return (
                     <div style={{ marginTop: 8 }}>
-                      <p>
+                      <p style={{ wordWrap: "break-word" }}>
                         <strong>Score:</strong> {recommendedEval.score}/100
                       </p>
-                      <p>
+                      <p style={{ wordWrap: "break-word" }}>
                         <strong>Summary:</strong> {recommendedEval.summary}
                       </p>
                     </div>
@@ -256,7 +319,9 @@ const ProposalComparisonPage = () => {
             </div>
             <div>
               <strong>Explanation:</strong>
-              <p style={{ marginTop: 8 }}>{comparison.overallExplanation}</p>
+              <p style={{ marginTop: 8, wordWrap: "break-word" }}>
+                {comparison.overallExplanation}
+              </p>
             </div>
           </Card>
         </>

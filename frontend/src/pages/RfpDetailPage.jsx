@@ -27,6 +27,26 @@ import dayjs from "dayjs";
 
 const { TextArea } = Input;
 
+// Hook to detect screen size
+const useBreakpoint = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(
+    window.innerWidth >= 768 && window.innerWidth < 1024
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return { isMobile, isTablet };
+};
+
 const RfpDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -39,6 +59,7 @@ const RfpDetailPage = () => {
   const [selectedVendors, setSelectedVendors] = useState([]);
   const [customMessage, setCustomMessage] = useState("");
   const [editing, setEditing] = useState(false);
+  const { isMobile, isTablet } = useBreakpoint();
 
   useEffect(() => {
     fetchData();
@@ -155,26 +176,51 @@ const RfpDetailPage = () => {
           marginBottom: 16,
           display: "flex",
           justifyContent: "space-between",
+          flexDirection: isMobile ? "column" : "row",
+          gap: 12,
         }}
       >
-        <h1>{rfp.title}</h1>
-        <Space>
-          <Button onClick={() => setEditing(true)}>Edit</Button>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: isMobile ? "20px" : "24px",
+            wordWrap: "break-word",
+          }}
+        >
+          {rfp.title}
+        </h1>
+        <Space
+          direction={isMobile ? "vertical" : "horizontal"}
+          style={{ width: isMobile ? "100%" : undefined }}
+          size="small"
+          wrap
+        >
+          <Button
+            onClick={() => setEditing(true)}
+            size={isMobile ? "middle" : "default"}
+            block={isMobile}
+          >
+            Edit
+          </Button>
           <Button
             type="primary"
             icon={<SendOutlined />}
             onClick={() => setSendModalVisible(true)}
             disabled={rfp.status === "closed"}
+            size={isMobile ? "middle" : "default"}
+            block={isMobile}
           >
-            Send to Vendors
+            {isMobile ? "Send" : "Send to Vendors"}
           </Button>
           {proposals.length >= 2 && (
             <Button
               type="default"
               icon={<SwapOutlined />}
               onClick={() => navigate(`/rfps/${id}/compare`)}
+              size={isMobile ? "middle" : "default"}
+              block={isMobile}
             >
-              Compare Proposals
+              {isMobile ? "Compare" : "Compare Proposals"}
             </Button>
           )}
           <Popconfirm
@@ -185,15 +231,27 @@ const RfpDetailPage = () => {
             okType="danger"
             cancelText="Cancel"
           >
-            <Button danger icon={<DeleteOutlined />}>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              size={isMobile ? "middle" : "default"}
+              block={isMobile}
+            >
               Delete
             </Button>
           </Popconfirm>
         </Space>
       </div>
 
-      <Card style={{ marginBottom: 16 }}>
-        <Descriptions column={2} bordered>
+      <Card
+        style={{ marginBottom: 16 }}
+        styles={{ body: { padding: isMobile ? 12 : 24 } }}
+      >
+        <Descriptions
+          column={{ xs: 1, sm: 1, md: 2 }}
+          bordered
+          size={isMobile ? "small" : "default"}
+        >
           <Descriptions.Item label="Status">
             <Tag color={getStatusColor(rfp.status)}>
               {rfp.status.toUpperCase()}
@@ -226,11 +284,22 @@ const RfpDetailPage = () => {
         </Descriptions>
       </Card>
 
-      <Card title="Items" style={{ marginBottom: 16 }}>
+      <Card
+        title="Items"
+        style={{ marginBottom: 16 }}
+        styles={{ body: { padding: isMobile ? 12 : 24 } }}
+      >
         {rfp.items && rfp.items.length > 0 ? (
-          <ul>
+          <ul style={{ paddingLeft: isMobile ? 20 : 24 }}>
             {rfp.items.map((item, index) => (
-              <li key={index} style={{ marginBottom: 8 }}>
+              <li
+                key={index}
+                style={{
+                  marginBottom: 8,
+                  wordWrap: "break-word",
+                  fontSize: isMobile ? "14px" : "16px",
+                }}
+              >
                 <strong>{item.name}</strong> - Quantity: {item.quantity}
                 {item.specs && ` - Specs: ${item.specs}`}
               </li>
@@ -241,11 +310,21 @@ const RfpDetailPage = () => {
         )}
       </Card>
 
-      <Card title={`Proposals (${proposals.length})`}>
+      <Card
+        title={`Proposals (${proposals.length})`}
+        styles={{ body: { padding: isMobile ? 12 : 24 } }}
+      >
         {proposals.length > 0 ? (
-          <ul>
+          <ul style={{ paddingLeft: isMobile ? 20 : 24 }}>
             {proposals.map((proposal) => (
-              <li key={proposal._id} style={{ marginBottom: 8 }}>
+              <li
+                key={proposal._id}
+                style={{
+                  marginBottom: 8,
+                  wordWrap: "break-word",
+                  fontSize: isMobile ? "14px" : "16px",
+                }}
+              >
                 <strong>{proposal.vendorId?.name || "Unknown Vendor"}</strong> -{" "}
                 {proposal.parsed?.currency || "USD"}{" "}
                 {proposal.parsed?.totalPrice || "N/A"} -{" "}
@@ -271,6 +350,8 @@ const RfpDetailPage = () => {
         }}
         confirmLoading={sending}
         okText="Send"
+        width={isMobile ? "90%" : 520}
+        style={{ top: isMobile ? 20 : undefined }}
       >
         <div style={{ marginBottom: 16 }}>
           <label>Select Vendors:</label>

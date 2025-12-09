@@ -8,12 +8,33 @@ import {
   deleteVendor,
 } from "../services/vendorApi";
 
+// Hook to detect screen size
+const useBreakpoint = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(
+    window.innerWidth >= 768 && window.innerWidth < 1024
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return { isMobile, isTablet };
+};
+
 const VendorListPage = () => {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
   const [form] = Form.useForm();
+  const { isMobile, isTablet } = useBreakpoint();
 
   useEffect(() => {
     fetchVendors();
@@ -82,17 +103,33 @@ const VendorListPage = () => {
       title: "Name",
       dataIndex: "name",
       key: "name",
+      width: isMobile ? 150 : undefined,
+      ellipsis: true,
     },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
+      width: isMobile ? 180 : undefined,
+      ellipsis: true,
+    },
+    {
+      title: "Status",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (isActive) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "Active" : "Inactive"}
+        </Tag>
+      ),
+      width: isMobile ? 90 : undefined,
     },
     {
       title: "Category",
       dataIndex: "category",
       key: "category",
       render: (category) => category || "-",
+      width: isMobile ? 100 : undefined,
     },
     {
       title: "Tags",
@@ -105,26 +142,19 @@ const VendorListPage = () => {
             : "-"}
         </>
       ),
-    },
-    {
-      title: "Status",
-      dataIndex: "isActive",
-      key: "isActive",
-      render: (isActive) => (
-        <Tag color={isActive ? "green" : "red"}>
-          {isActive ? "Active" : "Inactive"}
-        </Tag>
-      ),
+      width: isMobile ? 120 : undefined,
     },
     {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <Space>
+        <Space size={isMobile ? 2 : 4} wrap>
           <Button
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
+            size={isMobile ? "small" : "default"}
+            style={{ padding: isMobile ? "4px 8px" : undefined }}
           >
             Edit
           </Button>
@@ -133,11 +163,14 @@ const VendorListPage = () => {
             danger
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record._id)}
+            size={isMobile ? "small" : "default"}
+            style={{ padding: isMobile ? "4px 8px" : undefined }}
           >
             Delete
           </Button>
         </Space>
       ),
+      width: isMobile ? 140 : undefined,
     },
   ];
 
@@ -148,21 +181,44 @@ const VendorListPage = () => {
           marginBottom: 16,
           display: "flex",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
         }}
       >
-        <h1>Vendors</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          Add Vendor
+        <h1 style={{ margin: 0, fontSize: isMobile ? "20px" : "24px" }}>
+          Vendors
+        </h1>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleCreate}
+          size={isMobile ? "middle" : "default"}
+        >
+          {isMobile ? "Add" : "Add Vendor"}
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={vendors}
-        loading={loading}
-        rowKey="_id"
-        pagination={{ pageSize: 10 }}
-      />
+      <div
+        style={{
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          width: "100%",
+        }}
+      >
+        <Table
+          columns={columns}
+          dataSource={vendors}
+          loading={loading}
+          rowKey="_id"
+          pagination={{
+            pageSize: 10,
+            showQuickJumper: !isMobile,
+            simple: isMobile,
+          }}
+          scroll={{ x: isMobile ? "max-content" : undefined }}
+          size={isMobile ? "small" : "default"}
+        />
+      </div>
 
       <Modal
         title={editingVendor ? "Edit Vendor" : "Add Vendor"}
@@ -172,6 +228,8 @@ const VendorListPage = () => {
           form.resetFields();
         }}
         onOk={() => form.submit()}
+        width={isMobile ? "90%" : 520}
+        style={{ top: isMobile ? 20 : undefined }}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
